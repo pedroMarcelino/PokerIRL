@@ -1,6 +1,8 @@
 import type { BetMode, RoomView, RoundResult } from "@pokerirl/shared";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+// Mesmo domínio em produção (Vercel) e no Docker (nginx). No dev, o Vite faz
+// proxy de /api para http://localhost:3000.
+const API_BASE = "/api";
 
 export type CreatedPlayer = { room: RoomView; playerId: string; token: string };
 export type ClosedRound = { room: RoomView; result: RoundResult };
@@ -21,7 +23,7 @@ type ErrorPayload = { error?: { code?: string; message?: string } };
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers: {
         "content-type": "application/json",

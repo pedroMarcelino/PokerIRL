@@ -1,6 +1,9 @@
 import { EVENTS, type ServerEvent } from "@pokerirl/shared";
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3000/ws";
+// Derived from the current page: works on the Vercel domain, on localhost and
+// behind the Docker proxy, with no hostname baked into the bundle.
+const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const WS_URL = `${protocol}//${window.location.host}/api/ws`;
 
 export type ConnectionStatus = "connecting" | "online" | "offline";
 

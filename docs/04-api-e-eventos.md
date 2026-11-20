@@ -4,7 +4,8 @@
 >
 > Este arquivo é a **fonte da verdade** do contrato. Antes de mudar um endpoint, atualize aqui.
 
-Base URL local: `http://localhost:3000`
+Base URL local (dev/Docker interno): `http://localhost:3000`  
+Base URL pública (Vercel e navegador): `/api` — o rewrite do `vercel.json` encaminha `/api/*` ao serviço `server`, que registra as rotas com esse prefixo. O WebSocket segue o mesmo padrão: `ws(s)://<domínio>/api/ws` (local: `/ws`). No Docker, o nginx faz o mesmo encaminhamento e remove o prefixo antes de chegar ao Fastify.
 
 ## Convenções
 

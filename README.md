@@ -33,7 +33,7 @@ npm run dev:web      # site em http://localhost:5173
 
 O servidor usa `apps/server/.env`. Por padrao, sem esse arquivo, ele roda com banco em memoria (`DB_DRIVER=memory`). Com o `.env` preenchido ele conecta no Atlas; na subida aparece `[startup] banco=mongodb database=...`.
 
-O frontend usa `apps/web/.env.example` como referencia (`VITE_API_URL`, `VITE_WS_URL`). Se essas variaveis nao existirem, ele cai nos enderecos locais padrao.
+O frontend chama sempre `/api` e `/api/ws` no mesmo domínio. No dev, o Vite faz proxy desses caminhos para `http://localhost:3000`; não há URL de API gravada no bundle.
 
 ## Docker (subir tudo de uma vez)
 
@@ -41,12 +41,29 @@ O frontend usa `apps/web/.env.example` como referencia (`VITE_API_URL`, `VITE_WS
 docker compose up -d --build
 ```
 
-- Site: http://localhost:5173
-- API: http://localhost:3000/health
+- Site: http://localhost:5173 (o nginx encaminha `/api` e `/api/ws` para a API)
+- API direta: http://localhost:3000/health
 
-O Compose lê `apps/server/.env` do host e injeta as variáveis no container em runtime — o `.env` **não** entra na imagem. As URLs do front (`VITE_API_URL`, `VITE_WS_URL`) são build args: se mudar, rode `docker compose up -d --build web`.
+O Compose lê `apps/server/.env` do host e injeta as variáveis no container em runtime — o `.env` **não** entra na imagem.
 
 Para desligar: `docker compose down`. Para ver logs: `docker compose logs -f`.
+
+## Vercel (dois serviços, um domínio)
+
+O `vercel.json` declara os serviços `server` (Fastify) e `web` (Vite). O roteamento público é:
+
+- `/api/*` → serviço `server` (inclui `/api/health` e `/api/ws`)
+- todo o resto → serviço `web` (SPA com fallback para `index.html`)
+
+Variáveis de ambiente obrigatórias no projeto da Vercel:
+
+- `DB_DRIVER=mongodb`
+- `MONGODB_URI` e `MONGODB_DB` — mesma conta usada hoje pelo `.env` local
+- `CORS_ORIGIN` é opcional (as chamadas são no mesmo domínio)
+
+Não use `DB_DRIVER=memory` na Vercel: cada instância teria seu próprio estado. O broadcast do WebSocket também é local à instância; para salas com jogadores em instâncias diferentes é preciso adicionar um pub/sub externo.
+
+Para testar localmente com as mesmas rotas: `npx vercel dev --local`.
 
 ## Telas
 

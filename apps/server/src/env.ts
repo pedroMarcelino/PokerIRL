@@ -16,7 +16,7 @@ const schema = z.object({
   DB_DRIVER: z.enum(["memory", "mongodb"]).default("memory"),
   MONGODB_URI: z.string().min(1).optional(),
   MONGODB_DB: z.string().min(1).default("cassino_denso"),
-  CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
+  CORS_ORIGIN: z.string().min(1).optional(),
 });
 
 export const env = schema.parse(process.env);

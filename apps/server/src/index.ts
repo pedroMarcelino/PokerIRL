@@ -1,24 +1,12 @@
 import { buildApp } from "./app.js";
-import { connectMongo, disconnectMongo } from "./db/mongo.js";
-import { env } from "./env.js";
+import { disconnectMongo } from "./db/mongo.js";
 import { createRoomService } from "./domain/room-service.js";
+import { env } from "./env.js";
 import { attachRealtime, type Broadcaster } from "./realtime/websocket.js";
-import { MemoryRoomRepository } from "./repositories/memory.js";
-import { MongoRoomRepository } from "./repositories/mongo.js";
-import type { RoomRepository } from "./repositories/types.js";
+import { createRepository } from "./repository.js";
 
 async function main(): Promise<void> {
-  let repository: RoomRepository;
-
-  if (env.DB_DRIVER === "mongodb") {
-    const db = await connectMongo(env.MONGODB_URI!, env.MONGODB_DB);
-    const mongoRepository = new MongoRoomRepository(db);
-    await mongoRepository.init();
-    repository = mongoRepository;
-  } else {
-    repository = new MemoryRoomRepository();
-  }
-
+  const repository = await createRepository();
   const service = createRoomService(repository);
 
   // Deixa explícito na subida qual repositório foi selecionado.

@@ -9,8 +9,12 @@ export type Broadcaster = {
 
 type SubscribeMessage = { type: "subscribe"; code: string };
 
-export function attachRealtime(server: HttpServer, service: RoomService): Broadcaster {
-  const wss = new WebSocketServer({ server, path: "/ws" });
+export function attachRealtime(
+  server: HttpServer,
+  service: RoomService,
+  path = "/ws",
+): Broadcaster {
+  const wss = new WebSocketServer({ server, path });
   const subscriptions = new Map<WebSocket, string>();
 
   wss.on("connection", (socket) => {

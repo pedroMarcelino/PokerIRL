@@ -8,13 +8,17 @@ import { roomsRoutes } from "./routes/rooms.js";
 type Dependencies = {
   service: RoomService;
   broadcast: Broadcaster;
-  corsOrigin: string;
+  corsOrigin?: string;
+  /** Prefixo das rotas públicas. Local/Docker não usam; na Vercel é "/api". */
+  basePath?: string;
 };
 
 export async function buildApp(dependencies: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
 
-  await app.register(cors, { origin: dependencies.corsOrigin });
+  // Sem origem configurada, reflete a origem da requisição. Com /api no mesmo
+  // domínio o CORS nem chega a ser necessário, mas isso evita travar previews.
+  await app.register(cors, { origin: dependencies.corsOrigin ?? true });
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
@@ -28,6 +32,10 @@ export async function buildApp(dependencies: Dependencies): Promise<FastifyInsta
     });
   });
 
-  await app.register(roomsRoutes, dependencies);
+  if (dependencies.basePath) {
+    await app.register(roomsRoutes, { ...dependencies, prefix: dependencies.basePath });
+  } else {
+    await app.register(roomsRoutes, dependencies);
+  }
   return app;
 }

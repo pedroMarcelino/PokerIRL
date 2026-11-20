@@ -221,3 +221,20 @@ test("API: sala com vez recusa aposta abaixo do mínimo com 409", async (t) => {
   assert.equal(invalidMode.status, 400);
   assert.equal(invalidMode.body.error.code, "VALIDATION_ERROR");
 });
+
+test("rotas públicas ficam sob /api quando o prefixo é configurado", async () => {
+  const service = createRoomService(new MemoryRoomRepository());
+  const app = await buildApp({
+    service,
+    broadcast: { broadcast: () => {} },
+    basePath: "/api",
+  });
+
+  const prefixed = await app.inject({ method: "GET", url: "/api/health" });
+  assert.equal(prefixed.statusCode, 200);
+  assert.deepEqual(prefixed.json(), { ok: true });
+
+  const unprefixed = await app.inject({ method: "GET", url: "/health" });
+  assert.equal(unprefixed.statusCode, 404);
+  await app.close();
+});
