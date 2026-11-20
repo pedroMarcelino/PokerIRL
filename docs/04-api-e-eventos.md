@@ -181,6 +181,8 @@ Conexão em `ws://localhost:3000/ws`. Após conectar, o cliente assina a sala:
 
 O servidor responde com o estado atual e passa a transmitir mudanças para todos os assinantes daquela sala. Todo evento que carrega `room` inclui `room.activity`, usado pelo log no topo da página: recolhido, mostra uma linha com a última jogada; aberto, mostra o histórico.
 
+O broadcast do WebSocket alcança apenas os sockets conectados na **mesma instância** do servidor. Para que a vez não fique travada quando os jogadores estiverem em instâncias diferentes (ou o socket estiver reconectando), o cliente também consulta `GET /rooms/:code` a cada 2,5 s enquanto a aba está visível. Respostas mais antigas que um evento já recebido são descartadas pelo id da última entrada de `activity`.
+
 | Evento | Payload |
 | --- | --- |
 | `room:state` | `{ type, room }` — enviado logo após assinar |

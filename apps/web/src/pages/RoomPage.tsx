@@ -1,5 +1,5 @@
 import { isValidBetAmount, type ChipValue } from "@pokerirl/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { ActivityLog } from "../components/ActivityLog";
 import { BetControls } from "../components/BetControls";
@@ -43,6 +43,16 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
   const matchStarted = !isTurnMode || Boolean(room?.started);
   const isMyTurn = !isTurnMode || room?.currentPlayerId === me?.id;
   const currentPlayerName = room?.players.find((player) => player.id === room.currentPlayerId)?.name ?? null;
+
+  // Avisa quando a vez chega, mesmo que o aviso venha da consulta periódica
+  // em vez do WebSocket.
+  const previousTurn = useRef(isMyTurn);
+  useEffect(() => {
+    if (isMyTurn && !previousTurn.current && matchStarted) {
+      setNotice("Agora é a sua vez de apostar!");
+    }
+    previousTurn.current = isMyTurn;
+  }, [isMyTurn, matchStarted]);
 
   function handleAddChip(value: ChipValue) {
     setBetAmount((current) => current + value);

@@ -580,6 +580,31 @@ test("log de atividade registra início, aposta e vitória em ordem reversa", as
   for (const entry of activity) assert.ok(entry.id && entry.at);
 });
 
+test("fechar rodada libera a vez do próximo jogador, que consegue apostar", async () => {
+  const { service } = setup();
+  const dealer = await service.createRoom({
+    dealerName: "Ana",
+    initialChips: 1000,
+    betMode: "turn",
+  });
+  const bruno = await service.joinRoom({ code: dealer.room.code, name: "Bruno" });
+  await service.startGame({ code: dealer.room.code, token: dealer.token });
+
+  const bet = await service.placeBet({ code: dealer.room.code, token: dealer.token, amount: 350 });
+  assert.equal(bet.room.currentPlayerId, bruno.playerId);
+
+  const closed = await service.closeRound({
+    code: dealer.room.code,
+    token: dealer.token,
+    winnerId: bruno.playerId,
+  });
+  assert.equal(closed.room.currentPlayerId, bruno.playerId);
+
+  const next = await service.placeBet({ code: dealer.room.code, token: bruno.token, amount: 50 });
+  assert.equal(next.room.pot, 50);
+  assert.equal(next.room.players.find((player) => player.id === bruno.playerId)?.betThisRound, 50);
+});
+
 test("log de atividade é limitado às jogadas mais recentes", async () => {
   const { service } = setup();
   const dealer = await service.createRoom({ dealerName: "Ana", initialChips: 100 });
