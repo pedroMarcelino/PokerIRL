@@ -36,6 +36,9 @@
 | 2026-11-20 | Dockerfile separado para API e web + `compose.yaml` na raiz | Pedido do usuário: subir tudo com um comando. |
 | 2026-11-20 | `.env` injetado via `env_file`, nunca copiado para a imagem | Evita vazar `MONGODB_URI` com senha no build. |
 | 2026-11-20 | Front servido por nginx com fallback para `index.html` | Rotas do react-router como `/r/123456` precisam funcionar ao abrir o link do QR. |
-| 2026-11-20 | Browser chama a API em `localhost`, não no hostname do Compose | O navegador roda na máquina do usuário, não dentro da rede Docker. |
+| 2026-11-20 | Browser chama `/api` e `/api/ws` no próprio domínio | Antes eram `localhost:3000`; com Vercel services e com o proxy do nginx passou a não haver hostname de API gravado no bundle. |
 | 2026-11-20 | `tsx` movido para `dependencies` do servidor | A imagem roda TypeScript direto; `npm ci --omit=dev` precisa do `tsx` disponível. |
 | 2026-11-20 | Healthcheck usa `127.0.0.1` em vez de `localhost` | `localhost` resolvia para IPv6 dentro do container e o Fastify escuta em IPv4. |
+| 2026-11-20 | Vercel services `server` (Fastify) e `web` (Vite) | Confirmado pelo usuário; rewrites públicos `/api/(.*)` → `server` e `/(.*)` → `web`. Entrypoint `apps/server/src/vercel.ts` com rotas sob `/api`. |
+| 2026-11-20 | Nenhum binding entre serviços | O navegador chama a API pelo rewrite público; não existe chamada serviço→serviço e o bundle Vite é estático (bindings só existem em funções, em runtime). |
+| 2026-11-20 | MongoDB compartilhado na Vercel, sem pub/sub ainda | `DB_DRIVER=mongodb` é obrigatório no deploy; aceito o risco de o broadcast do WebSocket ser local à instância. Pub/sub externo fica para quando houver jogadores em instâncias diferentes. |
