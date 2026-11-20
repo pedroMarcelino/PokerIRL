@@ -1,15 +1,16 @@
-import type { PlayerView } from "@pokerirl/shared";
+import type { BetMode, PlayerView } from "@pokerirl/shared";
 import { useEffect, useRef } from "react";
 
 type Props = {
   players: PlayerView[];
   order: string[];
+  betMode: BetMode;
   pending: boolean;
   onConfirm: () => void;
   onClose: () => void;
 };
 
-export function StartMatchDialog({ players, order, pending, onConfirm, onClose }: Props) {
+export function StartMatchDialog({ players, order, betMode, pending, onConfirm, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const byId = new Map(players.map((player) => [player.id, player]));
   const ids = [
@@ -34,10 +35,16 @@ export function StartMatchDialog({ players, order, pending, onConfirm, onClose }
       <div className="modal__content">
         <p className="eyebrow">Começar partida</p>
         <h2>Confira a ordem</h2>
-        <p className="modal__pot">
-          Quem começa é <strong>{starter}</strong>. Ao iniciar, a ordem fica travada e a vez passa a
-          valer. A cada rodada o início gira para o próximo jogador.
-        </p>
+        {betMode === "turn" ? (
+          <p className="modal__pot">
+            Quem começa é <strong>{starter}</strong>. Ao iniciar, a ordem fica travada e a vez passa
+            a valer. A cada rodada o início gira para o próximo jogador.
+          </p>
+        ) : (
+          <p className="modal__pot">
+            Ao iniciar, a ordem fica travada. As apostas continuam livres — sem vez obrigatória.
+          </p>
+        )}
 
         <ol className="start-order__list">
           {ids.map((id, index) => {
@@ -49,7 +56,9 @@ export function StartMatchDialog({ players, order, pending, onConfirm, onClose }
                   {player.isDealer && <span aria-label="Dealer">👑 </span>}
                   {player.name}
                 </span>
-                {index === 0 && <span className="start-order__badge">começa</span>}
+                {index === 0 && betMode === "turn" && (
+                  <span className="start-order__badge">começa</span>
+                )}
               </li>
             );
           })}

@@ -406,6 +406,96 @@ p {
   margin-top: 20px;
 }
 
+/* ---------- Log de atividade ---------- */
+
+.activity {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(20, 56, 41, 0.7);
+}
+
+.activity summary {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.activity summary::-webkit-details-marker {
+  display: none;
+}
+
+.activity__label {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.activity__line {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity__chevron {
+  flex: 0 0 auto;
+  color: var(--gold);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 150ms ease;
+}
+
+.activity[open] .activity__chevron {
+  transform: rotate(180deg);
+}
+
+.activity__list {
+  display: grid;
+  max-height: 260px;
+  margin: 0;
+  padding: 0 14px 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.activity__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+.activity__item small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.activity__item--win span {
+  color: var(--gold-strong);
+}
+
+.activity__empty {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 /* ---------- Pote ---------- */
 
 .pot-card {

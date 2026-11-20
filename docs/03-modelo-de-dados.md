@@ -22,6 +22,8 @@ Uma sala é um único documento. Jogadores e apostas da rodada ficam embutidos n
 | `started` | boolean | `true` depois que o dealer iniciou a partida e travou a ordem |
 | `startingPlayerId` | string \| null | Quem começou a rodada atual; usado para girar o início da próxima |
 | `status` | `"open"` | Estado da sala (hoje só existe aberta) |
+| `expiresAt` | Date | Momento da expiração (criação + 24h); TTL do Mongo apaga a sala |
+| `activity` | Activity[] | Log curto das últimas jogadas, do mais recente para o mais antigo |
 | `players` | Player[] | Participantes |
 
 ### `players` (embutido)
@@ -34,6 +36,19 @@ Uma sala é um único documento. Jogadores e apostas da rodada ficam embutidos n
 | `betThisRound` | number | Quanto ele apostou na rodada atual |
 | `isDealer` | boolean | `true` para o criador; exibe 👑 na interface |
 | `token` | string (UUID) | Credencial do celular; nunca enviada nas respostas públicas |
+
+### `activity` (embutido em `rooms`)
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `id` | string (UUID) | Identificador da linha |
+| `kind` | `"start"` \| `"bet"` \| `"win"` | Início da partida, aposta ou rodada fechada |
+| `playerName` | string | Nome de quem fez a jogada |
+| `amount` | number \| null | Fichas envolvidas; `null` em `start` |
+| `round` | number | Rodada em que aconteceu |
+| `at` | string (ISO 8601) | Momento da jogada |
+
+O log guarda no máximo 30 linhas. Ele alimenta o dropdown no topo da sala: fechado, mostra só a última linha; aberto, mostra o histórico.
 
 ### `bets` (histórico)
 
@@ -63,6 +78,16 @@ O servidor nunca devolve `token` nem `players[].token`. A resposta pública cont
   "currentPlayerId": "…Bruno",
   "started": true,
   "status": "open",
+  "activity": [
+    {
+      "id": "…",
+      "kind": "bet",
+      "playerName": "Ana",
+      "amount": 25,
+      "round": 1,
+      "at": "2026-11-20T19:00:00.000Z"
+    }
+  ],
   "players": [
     { "id": "…", "name": "Ana", "chips": 975, "betThisRound": 25, "isDealer": true }
   ]
@@ -86,9 +111,15 @@ O token é devolvido **apenas** nas respostas de `POST /rooms` e `POST /rooms/:c
 11. `turnOrder` é sempre uma permutação exata dos IDs dos jogadores, sem repetição. Novos jogadores entram no fim; travada ou não, fechar rodada não altera a ordem.
 12. `started === true` impede `PUT /turn-order` e novos `POST /start`. Jogadores que entram depois são acrescentados ao fim da ordem sem destravar; se ninguém tiver fichas, o recém-chegado assume a vez.
 13. Ao fechar a rodada: `winner.chips += pot`, depois `pot = 0`, `currentBet = 0`, `round += 1` e, no modo `turn`, `startingPlayerId`/`currentPlayerId` passam ao próximo jogador da ordem (rotação do jogador que começa).
+14. `expiresAt` é sempre `createdAt + 24h`. Salas vencidas são tratadas como inexistentes (404), mesmo antes de o TTL do Mongo removê-las.
+15. Toda aposta aceita, início de partida e rodada fechada acrescenta uma linha a `activity`; o log é mantido do mais recente para o mais antigo e limitado a 30 linhas.
 
 ## Índices
 
 - `rooms._id`: único (já é a chave primária).
+- `rooms.expiresAt`: TTL com `expireAfterSeconds: 0` — apaga a sala 24h depois da criação.
+- `bets.createdAt`: TTL com `expireAfterSeconds: 86400` — apaga o histórico de apostas com 24h.
 - `bets.roomCode + bets.round`: para consultar o histórico de uma rodada.
 - Jogadores são buscados em memória dentro do documento da sala; não precisam de índice próprio nesta fase.
+
+Para limpar o banco manualmente: `npm run db:purge` (tudo) ou `npm run db:purge -- 123456` (uma sala).

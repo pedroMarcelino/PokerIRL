@@ -26,9 +26,24 @@ export async function buildApp(dependencies: Dependencies): Promise<FastifyInsta
         error: { code: error.code, message: error.message },
       });
     }
-    app.log.error(error);
-    return reply.code(500).send({
-      error: { code: "INTERNAL_ERROR", message: "Erro interno do servidor" },
+    // Erros de parsing do Fastify (JSON vazio, corpo malformado etc.) já vêm
+    // com status 4xx. Transformá-los em 500 escondia a causa real do cliente.
+    const cause = error as { statusCode?: number; message?: string };
+    const status =
+      typeof cause.statusCode === "number" && cause.statusCode >= 400 && cause.statusCode < 500
+        ? cause.statusCode
+        : 500;
+    if (status === 500) app.log.error(error);
+    return reply.code(status).send({
+      error: {
+        code:
+          status === 500
+            ? "INTERNAL_ERROR"
+            : status === 400
+              ? "VALIDATION_ERROR"
+              : "REQUEST_ERROR",
+        message: status === 500 ? "Erro interno do servidor" : (cause.message ?? "Requisição inválida"),
+      },
     });
   });
 

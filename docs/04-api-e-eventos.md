@@ -9,10 +9,11 @@ Base URL pública (Vercel e navegador): `/api` — o rewrite do `vercel.json` en
 
 ## Convenções
 
-- Corpo e respostas em JSON.
+- Corpo e respostas em JSON. Requisições **sem corpo** (como `POST /start`) não devem enviar `content-type`: um JSON vazio é rejeitado com 400.
 - Rotas que mutam estado exigem `Authorization: Bearer <token>` recebido na criação/entrada.
 - Erros têm o formato `{ "error": { "code": string, "message": string } }`.
-- `RoomView` está definido em `03-modelo-de-dados.md` e em `packages/shared`.
+- `RoomView` está definido em `03-modelo-de-dados.md` e em `packages/shared`, incluindo `activity` (log do topo da sala).
+- Salas e apostas expiram 24h depois da criação; uma sala vencida responde **404** `ROOM_NOT_FOUND`.
 
 ## Endpoints
 
@@ -78,11 +79,13 @@ Estado público da sala. Não exige token.
 
 ### `POST /rooms/:code/start` 🔒
 
-Somente o dealer inicia a partida de uma sala `turn`. É a verificação final antes das apostas: confirma a ordem, libera a vez e trava `turnOrder`.
+Somente o dealer inicia a partida. É a verificação final antes das apostas: confirma a ordem e trava `turnOrder`. Em salas `turn`, libera a vez no primeiro jogador da ordem com fichas; em `free`, apenas marca o início — as apostas continuam sem vez obrigatória.
 
-**200 OK** — `{ "room": RoomView }` com `started: true` e `currentPlayerId` no primeiro jogador da ordem que tenha fichas. O estado também é publicado como `room:state`.
+**Sem corpo**: envie apenas `Authorization: Bearer <token>` (sem `content-type`).
 
-**403** se quem chamar não for o dealer · **400** em sala `free` · **409** (`GAME_ALREADY_STARTED`) se já tiver começado.
+**200 OK** — `{ "room": RoomView }` com `started: true` e uma linha `kind: "start"` no começo de `activity`. Em `turn`, `currentPlayerId` fica no primeiro jogador da ordem com fichas. O estado também é publicado como `room:state`.
+
+**400** JSON vazio/malformado · **403** se quem chamar não for o dealer · **404** sala inexistente ou vencida · **409** (`GAME_ALREADY_STARTED`) se já tiver começado.
 
 ---
 
@@ -157,9 +160,9 @@ Fecha a rodada, transferindo todo o pot para o vencedor escolhido. Em salas `tur
 
 | Código HTTP | `error.code` | Situação |
 | --- | --- | --- |
-| 400 | `VALIDATION_ERROR` | Corpo inválido, nome vazio, aposta não inteira positiva |
+| 400 | `VALIDATION_ERROR` | Corpo inválido (inclusive JSON vazio), nome vazio, aposta não inteira positiva |
 | 403 | `UNAUTHORIZED` | Token ausente/inválido, tentativa de fechar rodada ou mudar a ordem sem ser dealer |
-| 404 | `ROOM_NOT_FOUND` | Código de sala inexistente |
+| 404 | `ROOM_NOT_FOUND` | Código de sala inexistente ou sala expirada (24h) |
 | 409 | `NAME_TAKEN` | Nome já usado na sala |
 | 409 | `INSUFFICIENT_CHIPS` | Jogador não tem fichas suficientes |
 | 409 | `BET_TOO_SMALL` | Sala `turn`: aposta não alcança o valor da rodada |
@@ -176,7 +179,7 @@ Conexão em `ws://localhost:3000/ws`. Após conectar, o cliente assina a sala:
 { "type": "subscribe", "code": "123456" }
 ```
 
-O servidor responde com o estado atual e passa a transmitir mudanças para todos os assinantes daquela sala.
+O servidor responde com o estado atual e passa a transmitir mudanças para todos os assinantes daquela sala. Todo evento que carrega `room` inclui `room.activity`, usado pelo log no topo da página: recolhido, mostra uma linha com a última jogada; aberto, mostra o histórico.
 
 | Evento | Payload |
 | --- | --- |
@@ -198,7 +201,7 @@ curl -X POST http://localhost:3000/rooms/123456/join \
   -H 'content-type: application/json' \
   -d '{"name":"Bruno"}'
 
-# iniciar partida (somente dealer, modo turn) — trava a ordem e libera a vez
+# iniciar partida (somente dealer) — sem corpo, trava a ordem; no modo turn libera a vez
 curl -X POST http://localhost:3000/rooms/123456/start \
   -H 'authorization: Bearer <token-do-dealer>'
 

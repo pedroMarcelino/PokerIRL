@@ -262,6 +262,60 @@ test("rotas públicas ficam sob /api quando o prefixo é configurado", async () 
   await app.close();
 });
 
+test("API: POST /start sem corpo funciona e JSON vazio é 400, não 500", async (t) => {
+  const service = createRoomService(new MemoryRoomRepository());
+  const app = await buildApp({
+    service,
+    broadcast: { broadcast: () => {} },
+    corsOrigin: "*",
+  });
+  await app.listen({ port: 0, host: "127.0.0.1" });
+  const { port } = app.server.address() as AddressInfo;
+  const base = `http://127.0.0.1:${port}`;
+  t.after(async () => app.close());
+
+  type Created = { code: string; token: string };
+  async function createRoom(dealerName: string): Promise<Created> {
+    const response = await fetch(`${base}/rooms`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ dealerName, initialChips: 100, betMode: "turn" }),
+    });
+    const body = (await response.json()) as { room: { code: string }; token: string };
+    return { code: body.room.code, token: body.token };
+  }
+
+  // O cliente real manda só o token: sem content-type e sem corpo.
+  const first = await createRoom("Ana");
+  const noBody = await fetch(`${base}/rooms/${first.code}/start`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${first.token}` },
+  });
+  assert.equal(noBody.status, 200);
+  const started = (await noBody.json()) as {
+    room: { started: boolean; activity: { kind: string }[] };
+  };
+  assert.equal(started.room.started, true);
+  assert.deepEqual(
+    started.room.activity.map((entry) => entry.kind),
+    ["start"],
+  );
+
+  // Corpo JSON vazio continua sendo erro de validação, nunca 500.
+  const second = await createRoom("Bruno");
+  const emptyJson = await fetch(`${base}/rooms/${second.code}/start`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${second.token}`,
+    },
+    body: "",
+  });
+  assert.equal(emptyJson.status, 400);
+  const error = (await emptyJson.json()) as { error: { code: string } };
+  assert.equal(error.error.code, "VALIDATION_ERROR");
+});
+
 test("entrypoint da Vercel responde /api depois de ready()", async () => {
   process.env.DB_DRIVER = "memory";
   const { default: server } = await import("../src/vercel.js");

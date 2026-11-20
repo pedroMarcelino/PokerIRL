@@ -1,3 +1,4 @@
+import { ROOM_TTL_MS } from "@pokerirl/shared";
 import type { Collection, Db } from "mongodb";
 import type { BetRecord, RoomRecord, RoomRepository } from "./types.js";
 
@@ -35,6 +36,9 @@ function fromDocument(doc: RoomDocument): RoomRecord {
     started,
     startingPlayerId,
     currentPlayerId,
+    // Documentos gravados antes da expiração não têm o campo: já nascem vencidos.
+    expiresAt: rest.expiresAt ?? new Date(0),
+    activity: rest.activity ?? [],
   } as RoomRecord;
 }
 
@@ -48,6 +52,10 @@ export class MongoRoomRepository implements RoomRepository {
   }
 
   async init(): Promise<void> {
+    // TTL do Mongo remove salas 24h depois de expiresAt e apostas 24h depois
+    // de createdAt. A checagem em get() cobre a janela do monitor de TTL.
+    await this.rooms.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    await this.bets.createIndex({ createdAt: 1 }, { expireAfterSeconds: ROOM_TTL_MS / 1000 });
     await this.bets.createIndex({ roomCode: 1, round: 1 });
   }
 
@@ -57,7 +65,13 @@ export class MongoRoomRepository implements RoomRepository {
 
   async get(code: string): Promise<RoomRecord | null> {
     const doc = await this.rooms.findOne({ _id: code });
-    return doc ? fromDocument(doc) : null;
+    if (!doc) return null;
+    const room = fromDocument(doc);
+    if (room.expiresAt.getTime() <= Date.now()) {
+      await this.rooms.deleteOne({ _id: code });
+      return null;
+    }
+    return room;
   }
 
   async put(room: RoomRecord): Promise<void> {

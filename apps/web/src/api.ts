@@ -26,7 +26,9 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     response = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers: {
-        "content-type": "application/json",
+        // POST sem corpo (como /start) não pode anunciar JSON: o Fastify
+        // rejeita "content-type: application/json" com body vazio.
+        ...(options.body === undefined ? {} : { "content-type": "application/json" }),
         ...(token ? { authorization: `Bearer ${token}` } : {}),
         ...(options.headers as Record<string, string> | undefined),
       },

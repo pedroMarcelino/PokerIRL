@@ -7,7 +7,7 @@ export type PlayerRecord = {
   token: string;
 };
 
-import type { BetMode } from "@pokerirl/shared";
+import type { ActivityEntry, BetMode } from "@pokerirl/shared";
 
 export type RoomRecord = {
   code: string;
@@ -26,6 +26,10 @@ export type RoomRecord = {
   startingPlayerId: string | null;
   status: "open";
   players: PlayerRecord[];
+  /** Momento em que a sala é apagada (TTL de 24h no Mongo). */
+  expiresAt: Date;
+  /** Log curto de atividade, do mais recente para o mais antigo. */
+  activity: ActivityEntry[];
 };
 
 export type BetRecord = {

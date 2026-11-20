@@ -11,7 +11,12 @@ export class MemoryRoomRepository implements RoomRepository {
 
   async get(code: string): Promise<RoomRecord | null> {
     const room = this.rooms.get(code);
-    return room ? structuredClone(room) : null;
+    if (!room) return null;
+    if (!room.expiresAt || room.expiresAt.getTime() <= Date.now()) {
+      this.rooms.delete(code);
+      return null;
+    }
+    return structuredClone(room);
   }
 
   async put(room: RoomRecord): Promise<void> {

@@ -3,7 +3,9 @@ import {
   DEFAULT_BET_MODE,
   MAX_NAME_LENGTH,
   ROOM_CODE_LENGTH,
+  ROOM_TTL_MS,
   isValidBetAmount,
+  type ActivityEntry,
   type BetMode,
   type RoomView,
   type RoundResult,
@@ -32,6 +34,27 @@ export type ReorderPlayersInput = { code: string; token: string; playerIds: stri
 
 export type CreatedPlayer = { room: RoomView; playerId: string; token: string };
 export type ClosedRound = { room: RoomView; result: RoundResult };
+
+/** Tamanho máximo do log exibido no topo da sala. */
+const ACTIVITY_LIMIT = 30;
+
+function logActivity(
+  room: RoomRecord,
+  kind: ActivityEntry["kind"],
+  playerName: string,
+  amount: number | null,
+  round = room.round,
+): void {
+  const entry: ActivityEntry = {
+    id: randomUUID(),
+    kind,
+    playerName,
+    amount,
+    round,
+    at: new Date().toISOString(),
+  };
+  room.activity = [entry, ...(room.activity ?? [])].slice(0, ACTIVITY_LIMIT);
+}
 
 function normalizeName(value: string): string {
   const name = value.trim();
@@ -106,6 +129,7 @@ function toView(room: RoomRecord): RoomView {
     currentPlayerId: room.betMode === "turn" ? room.currentPlayerId : null,
     started: room.started,
     status: room.status,
+    activity: room.activity ?? [],
     players: room.players.map(({ id, name, chips, betThisRound, isDealer }) => ({
       id,
       name,
@@ -162,6 +186,8 @@ export function createRoomService(repository: RoomRepository) {
         started: false,
         startingPlayerId: null,
         status: "open",
+        expiresAt: new Date(Date.now() + ROOM_TTL_MS),
+        activity: [],
         players: [dealerPlayer],
       };
 
@@ -243,12 +269,13 @@ export function createRoomService(repository: RoomRepository) {
         if (room.betMode === "turn") {
           room.currentPlayerId = nextEligibleId(room, player.id);
         }
+        logActivity(room, "bet", player.name, input.amount);
         await repository.put(room);
         return { room: toView(room), playerId: player.id };
       });
     },
 
-    /** Dealer confere a ordem e inicia a partida; a partir daqui a vez vale e a ordem trava. */
+    /** Dealer confere a ordem e inicia a partida; a partir daqui a ordem fica travada. */
     async startGame(input: { code: string; token: string }): Promise<RoomView> {
       return withLock(input.code, async () => {
         const room = await requireRoom(input.code);
@@ -256,14 +283,14 @@ export function createRoomService(repository: RoomRepository) {
         if (!dealer || dealer.token !== input.token) {
           throw unauthorized("Somente o dealer pode iniciar a partida");
         }
-        if (room.betMode !== "turn") {
-          throw validationError("A ordem e a vez só valem no modo por rodada");
-        }
         if (room.started) throw gameAlreadyStarted();
 
         room.started = true;
-        room.startingPlayerId = nextEligibleId(room, null);
-        room.currentPlayerId = room.startingPlayerId;
+        if (room.betMode === "turn") {
+          room.startingPlayerId = nextEligibleId(room, null);
+          room.currentPlayerId = room.startingPlayerId;
+        }
+        logActivity(room, "start", dealer.name, null);
         await repository.put(room);
         return toView(room);
       });
@@ -322,6 +349,7 @@ export function createRoomService(repository: RoomRepository) {
           room.currentPlayerId = starter;
         }
 
+        logActivity(room, "win", winner.name, amount, room.round - 1);
         await repository.put(room);
         return {
           room: toView(room),

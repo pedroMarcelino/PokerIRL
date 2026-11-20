@@ -1,6 +1,7 @@
 import { isValidBetAmount, type ChipValue } from "@pokerirl/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { ActivityLog } from "../components/ActivityLog";
 import { BetControls } from "../components/BetControls";
 import { CloseRoundDialog } from "../components/CloseRoundDialog";
 import { InviteCard } from "../components/InviteCard";
@@ -134,6 +135,7 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
         <p className="loading">Carregando a sala…</p>
       ) : room ? (
         <div className="room-layout">
+          <ActivityLog entries={room.activity ?? []} />
           <PotCard room={room} connection={connection} />
 
           {me ? (
@@ -171,7 +173,7 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
                 pending={orderPending}
                 onReorder={handleReorder}
               />
-              {isTurnMode && !room.started && (
+              {!room.started && (
                 <button
                   type="button"
                   className="button button--primary button--wide"
@@ -222,6 +224,7 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
         <StartMatchDialog
           players={room.players}
           order={room.turnOrder}
+          betMode={room.betMode}
           pending={startPending}
           onConfirm={handleStart}
           onClose={() => setStartOpen(false)}

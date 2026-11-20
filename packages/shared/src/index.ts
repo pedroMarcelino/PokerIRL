@@ -20,6 +20,9 @@ export function isValidBetAmount(value: number): boolean {
 export const ROOM_CODE_LENGTH = 6;
 export const MAX_NAME_LENGTH = 24;
 
+/** Salas e histórico de apostas expiram depois de 24 horas. */
+export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+
 /** Formas de apostar: livre (qualquer valor) ou com vez (mínimo = maior aposta da rodada). */
 export const BET_MODES = ["free", "turn"] as const;
 export type BetMode = (typeof BET_MODES)[number];
@@ -31,6 +34,18 @@ export type PlayerView = {
   chips: number;
   betThisRound: number;
   isDealer: boolean;
+};
+
+/** Uma linha do log de atividade exibido no topo da sala. */
+export type ActivityEntry = {
+  id: string;
+  kind: "start" | "bet" | "win";
+  playerName: string;
+  /** `null` para o início da partida, que não envolve fichas. */
+  amount: number | null;
+  round: number;
+  /** ISO 8601. */
+  at: string;
 };
 
 export type RoomView = {
@@ -49,6 +64,8 @@ export type RoomView = {
   started: boolean;
   status: "open";
   players: PlayerView[];
+  /** Últimas jogadas da sala, da mais recente para a mais antiga. */
+  activity: ActivityEntry[];
 };
 
 export type RoundResult = {

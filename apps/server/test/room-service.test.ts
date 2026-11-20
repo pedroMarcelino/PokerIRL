@@ -486,9 +486,16 @@ test("partida iniciada trava a ordem; modo livre não usa vez", async () => {
   const freeRoom = await service.getRoom(free.room.code);
   assert.equal(freeRoom.currentPlayerId, null);
   assert.equal(freeRoom.started, false);
+  const freeStarted = await service.startGame({ code: free.room.code, token: free.token });
+  assert.equal(freeStarted.started, true, "o dealer também inicia salas sem sequência");
+  assert.equal(freeStarted.currentPlayerId, null);
   await expectError(
-    service.startGame({ code: free.room.code, token: free.token }),
-    "VALIDATION_ERROR",
+    service.reorderPlayers({
+      code: free.room.code,
+      token: free.token,
+      playerIds: [free.playerId],
+    }),
+    "GAME_ALREADY_STARTED",
   );
   await service.placeBet({ code: free.room.code, token: free.token, amount: 10 });
   assert.equal((await service.getRoom(free.room.code)).pot, 10);
@@ -524,4 +531,62 @@ test("entrada tardia entra no fim da ordem sem destravar a partida", async () =>
     }),
     "GAME_ALREADY_STARTED",
   );
+});
+
+test("sala expira depois de 24 horas e passa a não existir", async () => {
+  const { repository, service } = setup();
+  const created = await service.createRoom({ dealerName: "Ana", initialChips: 100 });
+  const record = await repository.get(created.room.code);
+  assert.ok(record);
+  const hours = (record.expiresAt.getTime() - Date.now()) / (60 * 60 * 1000);
+  assert.ok(hours > 23.9 && hours <= 24, `expiração prevista para ${hours}h`);
+
+  record.expiresAt = new Date(Date.now() - 1000);
+  await repository.put(record);
+  assert.equal(await repository.get(created.room.code), null);
+  await expectError(service.getRoom(created.room.code), "ROOM_NOT_FOUND");
+  await expectError(
+    service.placeBet({ code: created.room.code, token: created.token, amount: 10 }),
+    "ROOM_NOT_FOUND",
+  );
+});
+
+test("log de atividade registra início, aposta e vitória em ordem reversa", async () => {
+  const { service } = setup();
+  const dealer = await service.createRoom({
+    dealerName: "Ana",
+    initialChips: 100,
+    betMode: "turn",
+  });
+  const bruno = await service.joinRoom({ code: dealer.room.code, name: "Bruno" });
+  assert.deepEqual((await service.getRoom(dealer.room.code)).activity, []);
+
+  await service.startGame({ code: dealer.room.code, token: dealer.token });
+  await service.placeBet({ code: dealer.room.code, token: dealer.token, amount: 25 });
+  const closed = await service.closeRound({
+    code: dealer.room.code,
+    token: dealer.token,
+    winnerId: bruno.playerId,
+  });
+
+  const activity = closed.room.activity;
+  assert.deepEqual(activity.map((entry) => entry.kind), ["win", "bet", "start"]);
+  assert.equal(activity[0]?.playerName, "Bruno");
+  assert.equal(activity[0]?.amount, 25);
+  assert.equal(activity[0]?.round, 1);
+  assert.equal(activity[1]?.playerName, "Ana");
+  assert.equal(activity[1]?.amount, 25);
+  assert.equal(activity[2]?.amount, null);
+  for (const entry of activity) assert.ok(entry.id && entry.at);
+});
+
+test("log de atividade é limitado às jogadas mais recentes", async () => {
+  const { service } = setup();
+  const dealer = await service.createRoom({ dealerName: "Ana", initialChips: 100 });
+  for (let i = 0; i < 35; i += 1) {
+    await service.placeBet({ code: dealer.room.code, token: dealer.token, amount: 1 });
+  }
+  const activity = (await service.getRoom(dealer.room.code)).activity;
+  assert.equal(activity.length, 30);
+  assert.equal(activity[0]?.amount, 1);
 });

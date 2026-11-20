@@ -13,7 +13,8 @@
     "test": "npm test --workspaces --if-present",
     "dev:server": "npm run dev --workspace @pokerirl/server",
     "dev:web": "npm run dev --workspace @pokerirl/web",
-    "start:server": "npm run start --workspace @pokerirl/server"
+    "start:server": "npm run start --workspace @pokerirl/server",
+    "db:purge": "npm run db:purge --workspace @pokerirl/server"
   },
   "engines": {
     "node": ">=20"
