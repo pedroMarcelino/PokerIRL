@@ -10,8 +10,12 @@ services:
     ports:
       - "3000:3000"
     # O .env fica no host e é injetado em runtime; nunca é copiado para a imagem.
+    # A ordem importa: em caso de conflito, o último arquivo prevalece.
+    # Assim o .env da raiz (fonte principal) vence o legado apps/server/.env.
     env_file:
       - path: ./apps/server/.env
+        required: false
+      - path: ./.env
         required: false
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]

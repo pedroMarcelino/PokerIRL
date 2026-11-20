@@ -31,7 +31,13 @@ npm run dev:server   # API em http://localhost:3000
 npm run dev:web      # site em http://localhost:5173
 ```
 
-O servidor usa `apps/server/.env`. Por padrao, sem esse arquivo, ele roda com banco em memoria (`DB_DRIVER=memory`). Com o `.env` preenchido ele conecta no Atlas; na subida aparece `[startup] banco=mongodb database=...`.
+## Configuração (.env na raiz)
+
+As configurações ficam no **`.env` da raiz** (`PokerIRL/.env`). Abra esse arquivo no Visual Studio Code: é ali que estão os valores usados para jogar e para colar no painel da Vercel. Ele é ignorado pelo Git, então nunca vai para o GitHub.
+
+O template com todos os campos e comentários está em [`.env.example`](.env.example) — esse sim é versionado. Se precisar recriar o `.env`, copie o example e preencha os valores.
+
+Prioridade de leitura do servidor: variáveis já definidas no ambiente (Vercel/Docker) > `.env` da raiz > `apps/server/.env` (legado). Sem nenhum arquivo, ele cai em `DB_DRIVER=memory` e não grava nada. Com o `.env` preenchido ele conecta no Atlas; na subida aparece `[startup] banco=mongodb database=...`.
 
 O frontend chama sempre `/api` e `/api/ws` no mesmo domínio. No dev, o Vite faz proxy desses caminhos para `http://localhost:3000`; não há URL de API gravada no bundle.
 
@@ -44,7 +50,7 @@ docker compose up -d --build
 - Site: http://localhost:5173 (o nginx encaminha `/api` e `/api/ws` para a API)
 - API direta: http://localhost:3000/health
 
-O Compose lê `apps/server/.env` do host e injeta as variáveis no container em runtime — o `.env` **não** entra na imagem.
+O Compose lê o `.env` da raiz (e, como legado, `apps/server/.env`) e injeta as variáveis no container em runtime — o `.env` **não** entra na imagem. Quando os dois existem, o da raiz prevalece.
 
 Para desligar: `docker compose down`. Para ver logs: `docker compose logs -f`.
 
