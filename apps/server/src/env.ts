@@ -21,7 +21,7 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DB_DRIVER: z.enum(["memory", "mongodb"]).default("memory"),
   MONGODB_URI: z.string().min(1).optional(),
-  MONGODB_DB: z.string().min(1).default("cassino_denso"),
+  MONGODB_DB: z.string().min(1).default("cassino-denso"),
   CORS_ORIGIN: z.string().min(1).optional(),
 });
 
