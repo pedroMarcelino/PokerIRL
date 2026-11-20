@@ -62,6 +62,13 @@ export async function roomsRoutes(app: FastifyInstance, options: Options): Promi
     return created;
   });
 
+  app.post("/rooms/:code/start", async (request) => {
+    const { code } = parse(z.object({ code: codeSchema }), request.params);
+    const room = await service.startGame({ code, token: bearerToken(request) });
+    broadcast.broadcast(code, { type: EVENTS.ROOM_STATE, room });
+    return { room };
+  });
+
   app.post("/rooms/:code/bets", async (request) => {
     const { code } = parse(z.object({ code: codeSchema }), request.params);
     const body = parse(z.object({ amount: z.number().int().positive() }), request.body);

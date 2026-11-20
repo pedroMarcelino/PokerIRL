@@ -590,6 +590,22 @@ p {
   border-color: rgba(231, 197, 111, 0.5);
 }
 
+.player-card--current {
+  border-color: var(--gold);
+  background: rgba(231, 197, 111, 0.09);
+  box-shadow: 0 0 0 1px rgba(231, 197, 111, 0.18);
+}
+
+.player-card__turn {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1a2b20;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .player-card__identity {
   display: grid;
   gap: 4px;
@@ -723,6 +739,22 @@ p {
 .turn-order__item--dragging {
   border-color: var(--gold);
   opacity: 0.6;
+}
+
+.turn-order__item--current {
+  border-color: var(--gold);
+  background: rgba(231, 197, 111, 0.1);
+}
+
+.turn-order__badge {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1a2b20;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .turn-order__index {
@@ -864,6 +896,17 @@ p {
   padding: 10px 12px;
   border-radius: 10px;
   background: rgba(231, 197, 111, 0.1);
+  color: var(--gold-strong);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.bet-controls__wait {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(231, 197, 111, 0.25);
+  border-radius: 10px;
+  background: rgba(231, 197, 111, 0.08);
   color: var(--gold-strong);
   font-size: 0.85rem;
   line-height: 1.4;
@@ -1189,6 +1232,36 @@ p {
   display: grid;
   gap: 8px;
   margin-bottom: 20px;
+}
+
+.start-order__list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.start-order__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(6, 22, 16, 0.5);
+  font-weight: 600;
+}
+
+.start-order__badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #1a2b20;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .winner-option {

@@ -4,11 +4,20 @@ import { useState } from "react";
 type Props = {
   players: PlayerView[];
   order: string[];
+  currentPlayerId: string | null;
+  locked: boolean;
   pending: boolean;
   onReorder: (playerIds: string[]) => void;
 };
 
-export function TurnOrderCard({ players, order, pending, onReorder }: Props) {
+export function TurnOrderCard({
+  players,
+  order,
+  currentPlayerId,
+  locked,
+  pending,
+  onReorder,
+}: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const byId = new Map(players.map((player) => [player.id, player]));
   const ids = [
@@ -40,7 +49,9 @@ export function TurnOrderCard({ players, order, pending, onReorder }: Props) {
     <section className="turn-order" aria-label="Ordem de jogo">
       <div className="turn-order__header">
         <span className="eyebrow">Ordem de jogo</span>
-        <span className="turn-order__hint">Arraste ou use as setas</span>
+        <span className="turn-order__hint">
+          {locked ? "Travada depois do início" : "Arraste ou use as setas"}
+        </span>
       </div>
 
       <ol className="turn-order__list">
@@ -49,8 +60,14 @@ export function TurnOrderCard({ players, order, pending, onReorder }: Props) {
           return (
             <li
               key={id}
-              className={`turn-order__item ${draggingId === id ? "turn-order__item--dragging" : ""}`}
-              draggable={!pending}
+              className={[
+                "turn-order__item",
+                draggingId === id ? "turn-order__item--dragging" : "",
+                currentPlayerId === id ? "turn-order__item--current" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              draggable={!pending && !locked}
               onDragStart={(event) => {
                 setDraggingId(id);
                 event.dataTransfer.effectAllowed = "move";
@@ -73,12 +90,13 @@ export function TurnOrderCard({ players, order, pending, onReorder }: Props) {
                   </span>
                 )}{" "}
                 {player.name}
+                {currentPlayerId === id && <span className="turn-order__badge">vez</span>}
               </span>
               <span className="turn-order__actions">
                 <button
                   type="button"
                   aria-label={`Subir ${player.name} na ordem`}
-                  disabled={pending || index === 0}
+                  disabled={pending || locked || index === 0}
                   onClick={() => move(index, -1)}
                 >
                   ▲
@@ -86,7 +104,7 @@ export function TurnOrderCard({ players, order, pending, onReorder }: Props) {
                 <button
                   type="button"
                   aria-label={`Descer ${player.name} na ordem`}
-                  disabled={pending || index === ids.length - 1}
+                  disabled={pending || locked || index === ids.length - 1}
                   onClick={() => move(index, 1)}
                 >
                   ▼
@@ -98,7 +116,9 @@ export function TurnOrderCard({ players, order, pending, onReorder }: Props) {
       </ol>
 
       <p className="turn-order__note">
-        Só o dealer muda esta ordem. Ela continua valendo nas próximas rodadas.
+        {locked
+          ? "Ordem travada: ela vale até o fim da partida e quem começa gira a cada rodada."
+          : "Só o dealer muda esta ordem. Confira antes de começar: depois fica travada."}
       </p>
     </section>
   );

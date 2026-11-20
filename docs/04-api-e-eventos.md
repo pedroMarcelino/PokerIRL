@@ -76,6 +76,16 @@ Estado público da sala. Não exige token.
 
 ---
 
+### `POST /rooms/:code/start` 🔒
+
+Somente o dealer inicia a partida de uma sala `turn`. É a verificação final antes das apostas: confirma a ordem, libera a vez e trava `turnOrder`.
+
+**200 OK** — `{ "room": RoomView }` com `started: true` e `currentPlayerId` no primeiro jogador da ordem que tenha fichas. O estado também é publicado como `room:state`.
+
+**403** se quem chamar não for o dealer · **400** em sala `free` · **409** (`GAME_ALREADY_STARTED`) se já tiver começado.
+
+---
+
 ### `POST /rooms/:code/bets` 🔒
 
 Registra uma aposta com valor inteiro positivo.
@@ -88,11 +98,13 @@ Registra uma aposta com valor inteiro positivo.
 
 - `amount` deve ser um **inteiro positivo**. As fichas do front (5/10/15/25/50) são atalhos que se somam — três cliques em 50 produzem `150` — mas o jogador também pode digitar qualquer inteiro, como `7`.
 - O servidor recusa zero, negativos, frações e valores acima do saldo do jogador.
-- Em salas `turn`, o total acumulado do jogador na rodada (`betThisRound + amount`) precisa alcançar `currentBet`. Se ele já apostou 50 e o valor da rodada é 150, o mínimo aceito agora é 100.
+- Em salas `turn`, a partida precisa ter sido iniciada pelo dealer (`POST /start`), e **só quem estiver em `currentPlayerId` pode apostar**. O total acumulado do jogador na rodada (`betThisRound + amount`) precisa alcançar `currentBet`. Se ele já apostou 50 e o valor da rodada é 150, o mínimo aceito agora é 100.
+- A cada aposta aceita em `turn`, a vez avança automaticamente para o próximo jogador da ordem com fichas. Quem tiver 0 fichas é pulado.
+- Em salas `free`, qualquer jogador aposta quando quiser; não há vez nem mínimo.
 
-**200 OK** — `{ "room": RoomView }` já com saldo debitado, pot e valor da rodada atualizados.
+**200 OK** — `{ "room": RoomView }` já com saldo debitado, pot, valor da rodada e (em `turn`) `currentPlayerId` atualizados.
 
-**400** valor inválido (não inteiro positivo) · **403** token inválido · **409** saldo insuficiente ou aposta abaixo do mínimo (`BET_TOO_SMALL`).
+**400** valor inválido (não inteiro positivo) · **403** token inválido · **409** saldo insuficiente (`INSUFFICIENT_CHIPS`), aposta abaixo do mínimo (`BET_TOO_SMALL`), partida não iniciada (`GAME_NOT_STARTED`) ou jogador fora da vez (`NOT_YOUR_TURN`).
 
 ---
 
@@ -107,16 +119,17 @@ Altera a ordem de jogo. **Somente o dealer** pode chamar.
 ```
 
 - `playerIds` deve conter **todos** os jogadores da sala, exatamente uma vez cada.
+- Depois de `POST /start`, a ordem fica travada: qualquer nova tentativa recebe **409** `GAME_ALREADY_STARTED`. Quem entrar depois é acrescentado ao fim da ordem, sem destravar.
 
 **200 OK** — `{ "room": RoomView }` com o novo `turnOrder`. A nova ordem também é publicada no WebSocket como `room:state`.
 
-**400** lista incompleta/repetida/ID desconhecido · **403** token ausente/inválido ou não-dealer.
+**400** lista incompleta/repetida/ID desconhecido · **403** token ausente/inválido ou não-dealer · **409** partida já iniciada.
 
 ---
 
 ### `POST /rooms/:code/rounds/close` 🔒
 
-Fecha a rodada, transferindo todo o pot para o vencedor escolhido.
+Fecha a rodada, transferindo todo o pot para o vencedor escolhido. Em salas `turn`, a rodada seguinte começa com o próximo jogador da ordem (quem começa gira); o dealer 👑 continua fixo.
 
 **Corpo**
 
@@ -150,6 +163,9 @@ Fecha a rodada, transferindo todo o pot para o vencedor escolhido.
 | 409 | `NAME_TAKEN` | Nome já usado na sala |
 | 409 | `INSUFFICIENT_CHIPS` | Jogador não tem fichas suficientes |
 | 409 | `BET_TOO_SMALL` | Sala `turn`: aposta não alcança o valor da rodada |
+| 409 | `GAME_NOT_STARTED` | Sala `turn`: o dealer ainda não iniciou a partida |
+| 409 | `NOT_YOUR_TURN` | Sala `turn`: outro jogador está na vez |
+| 409 | `GAME_ALREADY_STARTED` | Partida já iniciada: ordem travada / novo início recusado |
 | 409 | `INVALID_WINNER` | Vencedor não pertence à sala |
 
 ## WebSocket
@@ -182,7 +198,11 @@ curl -X POST http://localhost:3000/rooms/123456/join \
   -H 'content-type: application/json' \
   -d '{"name":"Bruno"}'
 
-# apostar
+# iniciar partida (somente dealer, modo turn) — trava a ordem e libera a vez
+curl -X POST http://localhost:3000/rooms/123456/start \
+  -H 'authorization: Bearer <token-do-dealer>'
+
+# apostar (no modo turn, só quem estiver na vez)
 curl -X POST http://localhost:3000/rooms/123456/bets \
   -H 'content-type: application/json' \
   -H 'authorization: Bearer <token>' \

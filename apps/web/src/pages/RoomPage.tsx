@@ -7,6 +7,7 @@ import { InviteCard } from "../components/InviteCard";
 import { PokerCheatSheet } from "../components/PokerCheatSheet";
 import { PlayerCard } from "../components/PlayerCard";
 import { PotCard } from "../components/PotCard";
+import { StartMatchDialog } from "../components/StartMatchDialog";
 import { TurnOrderCard } from "../components/TurnOrderCard";
 import { useRoom } from "../hooks/useRoom";
 import type { Session } from "../storage";
@@ -24,6 +25,8 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
   const [betPending, setBetPending] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [closePending, setClosePending] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
+  const [startPending, setStartPending] = useState(false);
   const [orderPending, setOrderPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -34,8 +37,11 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
   }, [notice]);
 
   const me = room?.players.find((player) => player.id === session.playerId);
-  const minimumBet =
-    room?.betMode === "turn" ? Math.max(0, room.currentBet - (me?.betThisRound ?? 0)) : 0;
+  const isTurnMode = room?.betMode === "turn";
+  const minimumBet = isTurnMode ? Math.max(0, room.currentBet - (me?.betThisRound ?? 0)) : 0;
+  const matchStarted = !isTurnMode || Boolean(room?.started);
+  const isMyTurn = !isTurnMode || room?.currentPlayerId === me?.id;
+  const currentPlayerName = room?.players.find((player) => player.id === room.currentPlayerId)?.name ?? null;
 
   function handleAddChip(value: ChipValue) {
     setBetAmount((current) => current + value);
@@ -49,8 +55,25 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
     setBetAmount(0);
   }
 
+  async function handleStart() {
+    setStartPending(true);
+    setNotice(null);
+    try {
+      const { room: updated } = await api.startGame(code, session.token);
+      setRoom(updated);
+      setStartOpen(false);
+      setBetAmount(0);
+      const starter = updated.players.find((player) => player.id === updated.currentPlayerId);
+      setNotice(`Partida iniciada. A vez é de ${starter?.name ?? "quem começa"}`);
+    } catch (cause) {
+      setNotice(cause instanceof Error ? cause.message : "Não foi possível iniciar a partida");
+    } finally {
+      setStartPending(false);
+    }
+  }
+
   async function handleBet() {
-    if (!isValidBetAmount(betAmount)) return;
+    if (!isValidBetAmount(betAmount) || !isMyTurn || !matchStarted) return;
     setBetPending(true);
     setNotice(null);
     try {
@@ -119,6 +142,9 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
               availableChips={me.chips}
               minimumBet={minimumBet}
               pending={betPending}
+              isMyTurn={isMyTurn}
+              matchStarted={matchStarted}
+              currentPlayerName={currentPlayerName}
               onAddChip={handleAddChip}
               onAmountChange={handleAmountChange}
               onClear={handleClear}
@@ -140,12 +166,24 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
               <TurnOrderCard
                 players={room.players}
                 order={room.turnOrder}
+                currentPlayerId={isTurnMode ? room.currentPlayerId : null}
+                locked={isTurnMode ? Boolean(room.started) : false}
                 pending={orderPending}
                 onReorder={handleReorder}
               />
+              {isTurnMode && !room.started && (
+                <button
+                  type="button"
+                  className="button button--primary button--wide"
+                  onClick={() => setStartOpen(true)}
+                >
+                  Começar partida
+                </button>
+              )}
               <button
                 type="button"
                 className="button button--gold button--wide"
+                disabled={isTurnMode && !room.started}
                 onClick={() => setCloseOpen(true)}
               >
                 Encerrar rodada
@@ -166,6 +204,7 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
                   position={Math.max(1, room.turnOrder.indexOf(player.id) + 1)}
                   isMe={player.id === session.playerId}
                   isLastWinner={player.id === room.lastWinnerId}
+                  isCurrent={isTurnMode && player.id === room.currentPlayerId}
                 />
               ))}
             </ul>
@@ -178,6 +217,16 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
           </button>
         </div>
       ) : null}
+
+      {startOpen && room && (
+        <StartMatchDialog
+          players={room.players}
+          order={room.turnOrder}
+          pending={startPending}
+          onConfirm={handleStart}
+          onClose={() => setStartOpen(false)}
+        />
+      )}
 
       {closeOpen && room && (
         <CloseRoundDialog

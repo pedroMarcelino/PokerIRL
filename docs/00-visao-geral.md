@@ -18,10 +18,10 @@ Não é um cassino online, não há jogo virtual e não há sorteio de cartas pe
 
 ## Escopo da fase 1 (dentro)
 
-- Criar sala com valor inicial único para todos e escolha do modo de aposta: **com vez** (mínimo igual à maior aposta da rodada) ou **sem sequência** (valor livre).
+- Criar sala com valor inicial único para todos e escolha do modo de aposta: **com vez** (vez obrigatória, mínimo igual à maior aposta da rodada e início girando a cada rodada) ou **sem sequência** (valor livre).
 - Entrar na sala por código/QR com nome.
 - Dealer também é jogador e aparece com a coroa 👑.
-- Dealer define e altera a **ordem de jogo** arrastando os jogadores na sala.
+- Dealer define a **ordem de jogo** arrastando os jogadores, confere e inicia a partida; a ordem fica travada depois disso.
 - Apostas somando fichas fixas (5/10/15/25/50) ou digitando um valor inteiro.
 - Pot, valor da rodada e saldos em tempo real.
 - Fechar rodada escolhendo o vencedor; pote vai para ele.

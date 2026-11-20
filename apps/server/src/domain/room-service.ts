@@ -11,9 +11,12 @@ import {
 import {
   AppError,
   betTooSmall,
+  gameAlreadyStarted,
+  gameNotStarted,
   insufficientChips,
   invalidWinner,
   nameTaken,
+  notYourTurn,
   roomNotFound,
   unauthorized,
   validationError,
@@ -58,6 +61,38 @@ function orderedIds(room: RoomRecord): string[] {
   return result;
 }
 
+/** Próximo jogador com fichas, percorrendo a ordem em ciclo. */
+function nextEligibleId(room: RoomRecord, fromId: string | null): string | null {
+  const order = orderedIds(room);
+  if (order.length === 0) return null;
+  const from = fromId === null ? -1 : order.indexOf(fromId);
+  for (let step = 1; step <= order.length; step += 1) {
+    const id = order[(from + step + order.length) % order.length]!;
+    const player = room.players.find((candidate) => candidate.id === id);
+    if (player && player.chips > 0) return id;
+  }
+  return null;
+}
+
+/** Salas gravadas antes da vez continuam válidas; completa o estado sem apagar apostas. */
+function normalizeTurnState(room: RoomRecord): void {
+  if (room.betMode !== "turn") {
+    room.currentPlayerId = null;
+    return;
+  }
+  const order = orderedIds(room);
+  if (room.currentPlayerId && !order.includes(room.currentPlayerId)) {
+    room.currentPlayerId = null;
+  }
+  const current = room.players.find((player) => player.id === room.currentPlayerId);
+  if (room.currentPlayerId && (!current || current.chips <= 0)) {
+    room.currentPlayerId = nextEligibleId(room, room.currentPlayerId);
+  }
+  if (room.startingPlayerId && !order.includes(room.startingPlayerId)) {
+    room.startingPlayerId = room.currentPlayerId;
+  }
+}
+
 function toView(room: RoomRecord): RoomView {
   return {
     code: room.code,
@@ -68,6 +103,8 @@ function toView(room: RoomRecord): RoomView {
     pot: room.pot,
     currentBet: room.currentBet,
     lastWinnerId: room.lastWinnerId,
+    currentPlayerId: room.betMode === "turn" ? room.currentPlayerId : null,
+    started: room.started,
     status: room.status,
     players: room.players.map(({ id, name, chips, betThisRound, isDealer }) => ({
       id,
@@ -93,6 +130,7 @@ export function createRoomService(repository: RoomRepository) {
   async function requireRoom(code: string): Promise<RoomRecord> {
     const room = await repository.get(code);
     if (!room) throw roomNotFound();
+    normalizeTurnState(room);
     return room;
   }
 
@@ -120,6 +158,9 @@ export function createRoomService(repository: RoomRepository) {
         pot: 0,
         currentBet: 0,
         lastWinnerId: null,
+        currentPlayerId: null,
+        started: false,
+        startingPlayerId: null,
         status: "open",
         players: [dealerPlayer],
       };
@@ -147,6 +188,12 @@ export function createRoomService(repository: RoomRepository) {
         };
         room.players.push(player);
         room.turnOrder = orderedIds(room);
+        // Quem entra depois vai para o fim da ordem; se a sala já começou e
+        // ninguém mais tem fichas, o recém-chegado entra na vez imediatamente.
+        if (room.betMode === "turn" && room.started && !room.currentPlayerId) {
+          room.startingPlayerId = player.id;
+          room.currentPlayerId = player.id;
+        }
         await repository.put(room);
         return { room: toView(room), playerId: player.id, token: player.token };
       });
@@ -165,10 +212,17 @@ export function createRoomService(repository: RoomRepository) {
           throw validationError("Aposta deve ser um número inteiro positivo");
         }
         if (player.chips < input.amount) throw insufficientChips();
-        // No modo "com vez", o total acumulado do jogador na rodada precisa
-        // alcançar a maior aposta já feita — é o "call" do poker.
-        if (room.betMode === "turn" && player.betThisRound + input.amount < room.currentBet) {
-          throw betTooSmall(room.currentBet - player.betThisRound);
+        if (room.betMode === "turn") {
+          if (!room.started) throw gameNotStarted();
+          if (room.currentPlayerId !== player.id) {
+            const current = room.players.find((candidate) => candidate.id === room.currentPlayerId);
+            throw notYourTurn(current?.name);
+          }
+          // O total acumulado do jogador na rodada precisa alcançar a maior
+          // aposta já feita — é o "call" do poker.
+          if (player.betThisRound + input.amount < room.currentBet) {
+            throw betTooSmall(room.currentBet - player.betThisRound);
+          }
         }
 
         await repository.recordBet({
@@ -184,8 +238,34 @@ export function createRoomService(repository: RoomRepository) {
         player.betThisRound += input.amount;
         room.pot += input.amount;
         room.currentBet = Math.max(...room.players.map((candidate) => candidate.betThisRound), 0);
+        // Cada aposta aceita encerra a vez daquele jogador. Quem tiver 0 fichas
+        // é pulado automaticamente para não travar a rodada.
+        if (room.betMode === "turn") {
+          room.currentPlayerId = nextEligibleId(room, player.id);
+        }
         await repository.put(room);
         return { room: toView(room), playerId: player.id };
+      });
+    },
+
+    /** Dealer confere a ordem e inicia a partida; a partir daqui a vez vale e a ordem trava. */
+    async startGame(input: { code: string; token: string }): Promise<RoomView> {
+      return withLock(input.code, async () => {
+        const room = await requireRoom(input.code);
+        const dealer = room.players.find((player) => player.isDealer);
+        if (!dealer || dealer.token !== input.token) {
+          throw unauthorized("Somente o dealer pode iniciar a partida");
+        }
+        if (room.betMode !== "turn") {
+          throw validationError("A ordem e a vez só valem no modo por rodada");
+        }
+        if (room.started) throw gameAlreadyStarted();
+
+        room.started = true;
+        room.startingPlayerId = nextEligibleId(room, null);
+        room.currentPlayerId = room.startingPlayerId;
+        await repository.put(room);
+        return toView(room);
       });
     },
 
@@ -196,6 +276,7 @@ export function createRoomService(repository: RoomRepository) {
         if (!dealer || dealer.token !== input.token) {
           throw unauthorized("Somente o dealer pode alterar a ordem de jogo");
         }
+        if (room.started) throw gameAlreadyStarted();
 
         const current = orderedIds(room);
         const ids = input.playerIds;
@@ -232,6 +313,14 @@ export function createRoomService(repository: RoomRepository) {
         room.pot = 0;
         room.currentBet = 0;
         for (const player of room.players) player.betThisRound = 0;
+
+        // A rodada seguinte começa com o próximo da ordem — o "botão" gira
+        // como no poker. O dealer 👑 continua fixo e quem tiver 0 fichas é pulado.
+        if (room.betMode === "turn" && room.started) {
+          const starter = nextEligibleId(room, room.startingPlayerId);
+          room.startingPlayerId = starter;
+          room.currentPlayerId = starter;
+        }
 
         await repository.put(room);
         return {

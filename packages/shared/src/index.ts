@@ -43,6 +43,10 @@ export type RoomView = {
   pot: number;
   currentBet: number;
   lastWinnerId: string | null;
+  /** ID de quem deve apostar agora no modo `turn`; `null` no modo `free` ou antes do início. */
+  currentPlayerId: string | null;
+  /** `true` depois que o dealer iniciou a partida e travou a ordem de jogo. */
+  started: boolean;
   status: "open";
   players: PlayerView[];
 };

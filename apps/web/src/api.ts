@@ -74,6 +74,14 @@ export const api = {
     );
   },
 
+  startGame(code: string, token: string) {
+    return request<{ room: RoomView }>(
+      `/rooms/${code}/start`,
+      { method: "POST" },
+      token,
+    );
+  },
+
   placeBet(code: string, token: string, amount: number) {
     return request<{ room: RoomView }>(
       `/rooms/${code}/bets`,

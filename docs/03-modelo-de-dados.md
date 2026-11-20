@@ -18,6 +18,9 @@ Uma sala é um único documento. Jogadores e apostas da rodada ficam embutidos n
 | `pot` | number | Total apostado na rodada atual |
 | `currentBet` | number | Maior aposta acumulada por um jogador na rodada |
 | `lastWinnerId` | string \| null | Vencedor da última rodada encerrada |
+| `currentPlayerId` | string \| null | Quem deve apostar agora no modo `turn`; `null` no `free` e antes do início |
+| `started` | boolean | `true` depois que o dealer iniciou a partida e travou a ordem |
+| `startingPlayerId` | string \| null | Quem começou a rodada atual; usado para girar o início da próxima |
 | `status` | `"open"` | Estado da sala (hoje só existe aberta) |
 | `players` | Player[] | Participantes |
 
@@ -57,6 +60,8 @@ O servidor nunca devolve `token` nem `players[].token`. A resposta pública cont
   "pot": 75,
   "currentBet": 25,
   "lastWinnerId": null,
+  "currentPlayerId": "…Bruno",
+  "started": true,
   "status": "open",
   "players": [
     { "id": "…", "name": "Ana", "chips": 975, "betThisRound": 25, "isDealer": true }
@@ -75,10 +80,12 @@ O token é devolvido **apenas** nas respostas de `POST /rooms` e `POST /rooms/:c
 5. Nomes são únicos por sala, ignorando caixa.
 6. Exatamente um jogador com `isDealer === true` por sala.
 7. `amount` de aposta é um inteiro positivo `<= chips` do jogador; as fichas `{5, 10, 15, 25, 50}` são apenas atalhos no front que se somam.
-8. Se `betMode === "turn"`, então `player.betThisRound + amount >= currentBet` antes da aposta ser aceita; em `"free"` não há esse mínimo.
-9. Salas gravadas antes destes campos são lidas como `betMode: "free"` e `turnOrder = players.map(id)` pelo repositório Mongo.
-10. `turnOrder` é sempre uma permutação exata dos IDs dos jogadores, sem repetição. Novos jogadores entram no fim; fechar rodada não altera a ordem.
-11. Ao fechar a rodada: `winner.chips += pot`, depois `pot = 0`, `currentBet = 0`, `round += 1`.
+8. Se `betMode === "turn"`, a partida precisa ter sido iniciada, `currentPlayerId` deve ser o autor da aposta e `player.betThisRound + amount >= currentBet`; em `"free"` não há vez nem mínimo.
+9. Depois de cada aposta aceita no modo `turn`, `currentPlayerId` passa ao próximo jogador da ordem com `chips > 0`.
+10. Salas antigas sem os campos novos são lidas com `started: false`, `turnOrder = players.map(id)`, `betMode: "free"` e `currentPlayerId: null` pelo repositório Mongo. Salas `turn` antigas ficam aguardando o dealer conferir a ordem e iniciar, sem herdar a ordem travada.
+11. `turnOrder` é sempre uma permutação exata dos IDs dos jogadores, sem repetição. Novos jogadores entram no fim; travada ou não, fechar rodada não altera a ordem.
+12. `started === true` impede `PUT /turn-order` e novos `POST /start`. Jogadores que entram depois são acrescentados ao fim da ordem sem destravar; se ninguém tiver fichas, o recém-chegado assume a vez.
+13. Ao fechar a rodada: `winner.chips += pot`, depois `pot = 0`, `currentBet = 0`, `round += 1` e, no modo `turn`, `startingPlayerId`/`currentPlayerId` passam ao próximo jogador da ordem (rotação do jogador que começa).
 
 ## Índices
 

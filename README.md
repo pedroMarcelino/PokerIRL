@@ -6,8 +6,8 @@ Fichas online para um jogo de poker com cartas **100% fisicas**. O site nao dist
 
 - [x] Documentacao de produto em `docs/`
 - [x] Monorepo (npm workspaces)
-- [x] Backend: salas, jogadores, apostas, ordem de jogo e fechamento de rodada
-- [x] Frontend React: entrar, apostar, acompanhar o pote e encerrar rodada
+- [x] Backend: salas, jogadores, apostas, ordem de jogo, vez obrigatória no modo `turn` e fechamento de rodada
+- [x] Frontend React: entrar, apostar, acompanhar o pote, destacar a vez e encerrar rodada
 - [ ] Deploy
 
 ## Estrutura

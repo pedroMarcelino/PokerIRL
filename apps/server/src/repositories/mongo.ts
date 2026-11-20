@@ -2,6 +2,8 @@ import type { Collection, Db } from "mongodb";
 import type { BetRecord, RoomRecord, RoomRepository } from "./types.js";
 
 type RoomDocument = Omit<RoomRecord, "code"> & { _id: string };
+/** Documentos antigos não têm os campos da vez; o tipo de leitura é parcial. */
+type LegacyRoomDocument = Partial<RoomDocument> & { _id: string };
 
 function toDocument(room: RoomRecord): RoomDocument {
   const { code, ...rest } = room;
@@ -9,14 +11,31 @@ function toDocument(room: RoomRecord): RoomDocument {
 }
 
 function fromDocument(doc: RoomDocument): RoomRecord {
-  const { _id, ...rest } = doc;
+  const { _id, ...rest } = doc as LegacyRoomDocument;
   // Salas antigas continuam válidas: modo livre e ordem de entrada na sala.
+  const players = rest.players ?? [];
+  const turnOrder = rest.turnOrder?.length ? rest.turnOrder : players.map((player) => player.id);
+  const betMode = rest.betMode ?? "free";
+  // Salas antigas ainda não têm início formal: o dealer pode conferir a ordem
+  // e iniciar quando quiser, em vez de herdarem a ordem travada.
+  const started = typeof rest.started === "boolean" ? rest.started : false;
+  const currentPlayerId =
+    rest.currentPlayerId === undefined
+      ? started && betMode === "turn"
+        ? (turnOrder[0] ?? null)
+        : null
+      : rest.currentPlayerId;
+  const startingPlayerId = rest.startingPlayerId ?? currentPlayerId;
   return {
-    code: _id,
     ...rest,
-    betMode: rest.betMode ?? "free",
-    turnOrder: rest.turnOrder?.length ? rest.turnOrder : rest.players.map((player) => player.id),
-  };
+    code: _id,
+    players,
+    betMode,
+    turnOrder,
+    started,
+    startingPlayerId,
+    currentPlayerId,
+  } as RoomRecord;
 }
 
 export class MongoRoomRepository implements RoomRepository {

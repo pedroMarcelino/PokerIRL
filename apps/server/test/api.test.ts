@@ -198,12 +198,35 @@ test("API: sala com vez recusa aposta abaixo do mínimo com 409", async (t) => {
   const code = created.body.room.code as string;
 
   const joined = await post(`/rooms/${code}/join`, { name: "Bruno" });
+
+  const beforeStart = await post(
+    `/rooms/${code}/bets`,
+    { amount: 50 },
+    created.body.token as string,
+  );
+  assert.equal(beforeStart.status, 409);
+  assert.equal(beforeStart.body.error.code, "GAME_NOT_STARTED");
+
+  const started = await post(`/rooms/${code}/start`, {}, created.body.token as string);
+  assert.equal(started.status, 200);
+  assert.equal(started.body.room.currentPlayerId, created.body.playerId);
+  assert.equal(started.body.room.started, true);
+
   const first = await post(
     `/rooms/${code}/bets`,
     { amount: 50 },
     created.body.token as string,
   );
   assert.equal(first.status, 200);
+  assert.equal(first.body.room.currentPlayerId, joined.body.playerId);
+
+  const outOfTurn = await post(
+    `/rooms/${code}/bets`,
+    { amount: 50 },
+    created.body.token as string,
+  );
+  assert.equal(outOfTurn.status, 409);
+  assert.equal(outOfTurn.body.error.code, "NOT_YOUR_TURN");
 
   const tooSmall = await post(
     `/rooms/${code}/bets`,

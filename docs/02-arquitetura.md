@@ -83,8 +83,9 @@ Apostas de jogadores diferentes podem chegar ao mesmo tempo. O serviço usa um *
 
 - `useRoom` busca o estado inicial com `GET /rooms/:code` e depois aplica os eventos do WebSocket; o estado completo enviado pelo servidor é sempre a fonte da verdade.
 - A aposta é montada por **acumulação**: cada clique numa ficha (5/10/15/25/50) soma ao total; o total também pode ser digitado num `input type="number"`. A confirmação continua explícita.
-- O modo da sala (`betMode`) é definido na criação. No modo `turn`, o serviço valida `betThisRound + amount >= currentBet`; no modo `free`, só valida inteiro positivo e saldo. Salas Mongo antigas sem o campo são lidas como `free`.
-- A ordem de jogo fica em `turnOrder` (IDs dos jogadores). `PUT /rooms/:code/turn-order` é restrito ao dealer, valida que a lista é uma permutação exata dos participantes e transmite o `RoomView` atualizado como `room:state`.
+- O modo da sala (`betMode`) é definido na criação. No modo `turn`, o dealer inicia a partida (`POST /rooms/:code/start`), o serviço exige que `currentPlayerId` seja o jogador da aposta, valida `betThisRound + amount >= currentBet` e avança a vez ao aceitar; no modo `free`, só valida inteiro positivo e saldo. Salas Mongo antigas sem o campo são lidas como `free`.
+- A ordem de jogo fica em `turnOrder` (IDs dos jogadores). `PUT /rooms/:code/turn-order` é restrito ao dealer, valida que a lista é uma permutação exata dos participantes e transmite o `RoomView` atualizado como `room:state`. Depois do início (`started: true`) a ordem fica travada; novos jogadores entram no fim sem destravar.
+- A vez `currentPlayerId` percorre a ordem em ciclo e pula quem tem 0 fichas. Ao fechar a rodada, `startingPlayerId` avança para o próximo da ordem: quem começa gira a cada rodada, mantendo o dealer 👑 fixo.
 - O botão "Encerrar rodada" só aparece para o jogador com `isDealer`; ele abre um modal para escolher o vencedor.
 - A sessão (token + playerId) fica no `localStorage`, por sala. Sem sessão, abrir `/r/:code` mostra a tela de entrada com o código preenchido.
 - O WebSocket reconecta sozinho; o badge mostra `ao vivo`, `conectando…` ou `reconectando…`.

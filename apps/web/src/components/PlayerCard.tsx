@@ -5,13 +5,15 @@ type Props = {
   position: number;
   isMe: boolean;
   isLastWinner: boolean;
+  isCurrent: boolean;
 };
 
-export function PlayerCard({ player, position, isMe, isLastWinner }: Props) {
+export function PlayerCard({ player, position, isMe, isLastWinner, isCurrent }: Props) {
   const classes = [
     "player-card",
     isMe ? "player-card--me" : "",
     isLastWinner ? "player-card--winner" : "",
+    isCurrent ? "player-card--current" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -30,6 +32,7 @@ export function PlayerCard({ player, position, isMe, isLastWinner }: Props) {
           )}
           {player.name}
           {isMe && <span className="player-card__you">você</span>}
+          {isCurrent && <span className="player-card__turn">jogando agora</span>}
         </span>
         {isLastWinner && <span className="player-card__winner">ganhou a última</span>}
       </div>
