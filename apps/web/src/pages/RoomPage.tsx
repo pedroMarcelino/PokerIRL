@@ -1,4 +1,4 @@
-import { isValidBetAmount, type ChipValue } from "@porkerirl/shared";
+import { isValidBetAmount, type ChipValue } from "@pokerirl/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { BetControls } from "../components/BetControls";
@@ -97,7 +97,7 @@ export function RoomPage({ code, session, onLeave, onExit }: Props) {
   return (
     <main className="room-page">
       <header className="room-header">
-        <div className="brand">porkerIRL</div>
+        <div className="brand">PokerIRL</div>
         <div className="room-header__meta">
           <span className="room-code">Sala {code}</span>
           {me && <span className="room-header__name">Olá, {me.name}</span>}

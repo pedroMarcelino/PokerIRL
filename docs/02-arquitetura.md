@@ -5,7 +5,7 @@
 ## Monorepo
 
 ```
-porkerirl/
+pokerirl/
 ├── apps/
 │   ├── server/                 # API HTTP + WebSocket
 │   │   └── src/

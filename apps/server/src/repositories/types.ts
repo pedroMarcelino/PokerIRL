@@ -7,7 +7,7 @@ export type PlayerRecord = {
   token: string;
 };
 
-import type { BetMode } from "@porkerirl/shared";
+import type { BetMode } from "@pokerirl/shared";
 
 export type RoomRecord = {
   code: string;

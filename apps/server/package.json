@@ -1,5 +1,5 @@
 {
-  "name": "@porkerirl/server",
+  "name": "@pokerirl/server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
-    "@porkerirl/shared": "*",
+    "@pokerirl/shared": "*",
     "@fastify/cors": "^10.0.0",
     "dotenv": "^16.4.0",
     "fastify": "^5.0.0",

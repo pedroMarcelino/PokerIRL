@@ -1,5 +1,5 @@
 {
-  "name": "porkerirl",
+  "name": "pokerirl",
   "version": "0.1.0",
   "private": true,
   "description": "Fichas online para poker com cartas fisicas",
@@ -11,9 +11,9 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "dev:server": "npm run dev --workspace @porkerirl/server",
-    "dev:web": "npm run dev --workspace @porkerirl/web",
-    "start:server": "npm run start --workspace @porkerirl/server"
+    "dev:server": "npm run dev --workspace @pokerirl/server",
+    "dev:web": "npm run dev --workspace @pokerirl/web",
+    "start:server": "npm run start --workspace @pokerirl/server"
   },
   "engines": {
     "node": ">=20"

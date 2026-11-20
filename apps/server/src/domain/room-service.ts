@@ -7,7 +7,7 @@ import {
   type BetMode,
   type RoomView,
   type RoundResult,
-} from "@porkerirl/shared";
+} from "@pokerirl/shared";
 import {
   AppError,
   betTooSmall,

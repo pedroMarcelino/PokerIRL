@@ -16,7 +16,7 @@
 
 ## Memória rápida do projeto
 
-- Projeto: **porkerIRL** (pasta raiz `porkerirl`).
+- Projeto: **PokerIRL** (pasta raiz `PokerIRL`).
 - Poker com **cartas 100% físicas**; o sistema só lida com fichas.
 - **Dealer** cria a sala, define o valor inicial igual para todos, joga também e é identificado com 👑.
 - Jogadores entram por **código de 6 dígitos / QR code** e informam um **nome**.

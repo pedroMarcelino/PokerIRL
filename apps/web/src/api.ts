@@ -1,4 +1,4 @@
-import type { BetMode, RoomView, RoundResult } from "@porkerirl/shared";
+import type { BetMode, RoomView, RoundResult } from "@pokerirl/shared";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 

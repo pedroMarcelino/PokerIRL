@@ -4,7 +4,7 @@ import {
   type CardRank,
   type CardSuit,
   type PlayingCard,
-} from "@porkerirl/shared";
+} from "@pokerirl/shared";
 import { useState } from "react";
 
 const SUIT_SYMBOL: Record<CardSuit, string> = {

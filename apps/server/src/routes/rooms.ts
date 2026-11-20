@@ -1,4 +1,4 @@
-import { BET_MODES, EVENTS, type PlayerView } from "@porkerirl/shared";
+import { BET_MODES, EVENTS, type PlayerView } from "@pokerirl/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { unauthorized, validationError } from "../domain/errors.js";

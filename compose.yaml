@@ -1,11 +1,11 @@
-name: porkerirl
+name: pokerirl
 
 services:
   server:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
-    container_name: porkerirl-server
+    container_name: pokerirl-server
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -27,7 +27,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
         VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:3000/ws}
-    container_name: porkerirl-web
+    container_name: pokerirl-web
     restart: unless-stopped
     ports:
       - "5173:80"

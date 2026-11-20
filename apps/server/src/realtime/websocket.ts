@@ -1,5 +1,5 @@
 import type { Server as HttpServer } from "node:http";
-import { EVENTS, type ServerEvent } from "@porkerirl/shared";
+import { EVENTS, type ServerEvent } from "@pokerirl/shared";
 import { WebSocket, WebSocketServer } from "ws";
 import type { RoomService } from "../domain/room-service.js";
 

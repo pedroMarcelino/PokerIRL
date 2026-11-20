@@ -1,4 +1,4 @@
-import { CHIP_VALUES, type ChipValue } from "@porkerirl/shared";
+import { CHIP_VALUES, type ChipValue } from "@pokerirl/shared";
 
 type Props = {
   amount: number;

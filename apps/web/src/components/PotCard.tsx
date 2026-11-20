@@ -1,4 +1,4 @@
-import type { RoomView } from "@porkerirl/shared";
+import type { RoomView } from "@pokerirl/shared";
 import { ConnectionBadge } from "./ConnectionBadge";
 import type { ConnectionStatus } from "../socket";
 

@@ -19,7 +19,7 @@ ARG VITE_WS_URL=ws://localhost:3000/ws
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_WS_URL=$VITE_WS_URL
 
-RUN npm run build --workspace @porkerirl/web
+RUN npm run build --workspace @pokerirl/web
 
 FROM nginx:1.27-alpine
 

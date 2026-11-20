@@ -1,4 +1,4 @@
-# porkerIRL
+# PokerIRL
 
 Fichas online para um jogo de poker com cartas **100% fisicas**. O site nao distribui cartas: ele apenas controla saldo, apostas, pote e mostra a colinha de maos de poker com cartas ilustrativas.
 
@@ -13,7 +13,7 @@ Fichas online para um jogo de poker com cartas **100% fisicas**. O site nao dist
 ## Estrutura
 
 ```
-porkerirl/
+pokerirl/
 ├── apps/
 │   ├── server/     # API + WebSocket (Node, Fastify, MongoDB)
 │   └── web/        # React + Vite (mobile-first)

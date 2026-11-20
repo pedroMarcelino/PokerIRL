@@ -1,4 +1,4 @@
-import type { PlayerView } from "@porkerirl/shared";
+import type { PlayerView } from "@pokerirl/shared";
 
 type Props = {
   player: PlayerView;

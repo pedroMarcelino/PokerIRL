@@ -31,7 +31,7 @@
 | 2026-11-20 | Ordem é guia visual, sem bloqueio de aposta fora da vez | Nenhuma regra de bloqueio foi pedida; o dealer é a autoridade da mesa, como no resto do sistema. Pode ser adicionado depois se o usuário quiser travar a vez. |
 | 2026-11-20 | Valores iniciais sugeridos: 500 / 1000 / 2000 + livre | Aprovado pelo usuário; todo mundo começa igual. |
 | 2026-11-20 | QR apenas gerado na sala; sem leitor de câmera | Código de 6 dígitos e link copiável resolvem a entrada; evita permissão de câmera. |
-| 2026-11-20 | Nome do produto: porkerIRL (antes Cassino Denso) | Pedido do usuário; nome trocado em código, pacotes, Docker, docs e tela. O banco em `.env` mantém o nome antigo para não perder dados. |
+| 2026-11-20 | Nome do produto e do repo: PokerIRL (antes Cassino Denso) | Pedido do usuário; grafia corrigida de "porkerIRL" para **PokerIRL** em código, pacotes, Docker, docs, tela e GitHub. O banco em `.env` mantém o nome antigo para não perder dados. |
 | 2026-11-20 | react-router-dom 7 no lugar da 6 | Versão 6 tem alertas de segurança no `npm audit`; API de rotas usada é compatível. |
 | 2026-11-20 | Dockerfile separado para API e web + `compose.yaml` na raiz | Pedido do usuário: subir tudo com um comando. |
 | 2026-11-20 | `.env` injetado via `env_file`, nunca copiado para a imagem | Evita vazar `MONGODB_URI` com senha no build. |

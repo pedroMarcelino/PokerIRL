@@ -17,4 +17,4 @@ COPY packages/shared ./packages/shared
 # O .env NÃO entra na imagem: o Compose injeta as variáveis em runtime.
 EXPOSE 3000
 
-CMD ["npm", "run", "start", "--workspace", "@porkerirl/server"]
+CMD ["npm", "run", "start", "--workspace", "@pokerirl/server"]

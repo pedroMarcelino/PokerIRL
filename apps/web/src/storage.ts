@@ -1,4 +1,4 @@
-const PREFIX = "porkerirl:session:";
+const PREFIX = "pokerirl:session:";
 
 export type Session = {
   token: string;

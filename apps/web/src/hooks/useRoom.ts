@@ -1,4 +1,4 @@
-import type { RoomView } from "@porkerirl/shared";
+import type { RoomView } from "@pokerirl/shared";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import { subscribeRoom, type ConnectionStatus } from "../socket";

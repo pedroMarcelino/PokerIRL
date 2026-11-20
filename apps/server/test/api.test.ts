@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { AddressInfo } from "node:net";
-import { EVENTS, type ServerEvent } from "@porkerirl/shared";
+import { EVENTS, type ServerEvent } from "@pokerirl/shared";
 import { WebSocket } from "ws";
 import { buildApp } from "../src/app.js";
 import { createRoomService } from "../src/domain/room-service.js";

@@ -1,4 +1,4 @@
-import { DEFAULT_BET_MODE, type BetMode } from "@porkerirl/shared";
+import { DEFAULT_BET_MODE, type BetMode } from "@pokerirl/shared";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
