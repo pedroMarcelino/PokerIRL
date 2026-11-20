@@ -20,4 +20,10 @@ const app = await buildApp({
 
 realtime = attachRealtime(app.server, service, "/api/ws");
 
+// O Fastify monta o contexto/hooks de cada rota no evento `preReady`. Sem
+// `ready()`, a primeira requisição quebra em preParsingHookRunner com
+// "Cannot read properties of undefined (reading 'length')". `ready()` não
+// abre porta: só finaliza a inicialização antes de exportar o servidor.
+await app.ready();
+
 export default app.server;

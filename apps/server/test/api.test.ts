@@ -238,3 +238,22 @@ test("rotas públicas ficam sob /api quando o prefixo é configurado", async () 
   assert.equal(unprefixed.statusCode, 404);
   await app.close();
 });
+
+test("entrypoint da Vercel responde /api depois de ready()", async () => {
+  process.env.DB_DRIVER = "memory";
+  const { default: server } = await import("../src/vercel.js");
+
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+  const address = server.address();
+  assert.ok(address && typeof address !== "string", "servidor sem endereço");
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true });
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});
