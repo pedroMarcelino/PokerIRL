@@ -6,7 +6,7 @@ export function HomePage() {
       <div className="splash__card">
         <p className="eyebrow">Cartas na mesa, fichas no celular</p>
         <h1>
-          Cassino <span>Denso</span>
+          Poker<span>IRL</span>
         </h1>
         <p className="splash__description">
           Crie uma sala, chame todo mundo pelo código e acompanhe as apostas em tempo real.
